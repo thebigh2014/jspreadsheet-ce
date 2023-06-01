@@ -25,6 +25,7 @@
         "spreadsheet"
     ],
     "dependencies": {
+        "jquery": "^3.6.4",
         "jsuites": "^5.0.17",
         "@jspreadsheet/formula": "^2.0.2"
     },
@@ -43,7 +44,7 @@
     },
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
-    "version": "4.13.2",
+    "version": "4.13.4",
     "bugs": "https://github.com/jspreadsheet/ce/issues",
     "homepage": "https://github.com/jspreadsheet/ce",
     "download": "https://github.com/jspreadsheet/ce/archive/master.zip",

@@ -1,5 +1,5 @@
 /**
- * Jspreadsheet v4.13.2
+ * Jspreadsheet v4.13.4
  *
  * Website: https://bossanova.uk/jspreadsheet/
  * Description: Create amazing web based spreadsheets.
@@ -24,7 +24,7 @@ if (! formula && typeof(require) === 'function') {
         // Information
         var info = {
             title: 'Jspreadsheet',
-            version: '4.13.2',
+            version: '4.13.4',
             type: 'CE',
             host: 'https://bossanova.uk/jspreadsheet',
             license: 'MIT',
@@ -111,6 +111,8 @@ if (! formula && typeof(require) === 'function') {
             // Rows and columns definitions
             rows:[],
             columns:[],
+            // Cell overrides
+            cells:{},
             // Deprected legacy options
             colHeaders:[],
             colWidths:[],
@@ -1309,6 +1311,7 @@ if (! formula && typeof(require) === 'function') {
                     td = obj.options.columns[i].editor.createCell(td);
                 }
             } else {
+                var fullColumnName = jexcel.getColumnName(i) + (j+1);
                 // Hidden column
                 if (obj.options.columns[i].type == 'hidden') {
                     td.style.display = 'none';
@@ -1342,7 +1345,8 @@ if (! formula && typeof(require) === 'function') {
                     }
                     // Create calendar cell
                     td.textContent = jSuites.calendar.getDateString(formatted ? formatted : value, obj.options.columns[i].options.format);
-                } else if (obj.options.columns[i].type == 'dropdown' || obj.options.columns[i].type == 'autocomplete') {
+                } else if (obj.options.columns[i].type == 'dropdown' || obj.options.columns[i].type == 'autocomplete' ||
+                    (obj.options.cells[fullColumnName] && obj.options.cells[fullColumnName].type == 'dropdown')) {
                     // Create dropdown cell
                     td.classList.add('jexcel_dropdown');
                     td.textContent = obj.getDropDownValue(i, value);
@@ -1423,6 +1427,9 @@ if (! formula && typeof(require) === 'function') {
             }
             if (obj.options.columns[colNumber].id) {
                 obj.headers[colNumber].setAttribute('id', obj.options.columns[colNumber].id);
+            }
+            if (obj.options.columns[colNumber].colspan) {
+                obj.headers[colNumber].setAttribute('colspan', obj.options.columns[colNumber].colspan);
             }
 
             // Width control
@@ -1978,7 +1985,7 @@ if (! formula && typeof(require) === 'function') {
             }
 
             // Create editor
-            var createEditor = function(type) {
+            var createEditor = function(type, columnType) {
                 // Cell information
                 var info = cell.getBoundingClientRect();
 
@@ -1987,6 +1994,11 @@ if (! formula && typeof(require) === 'function') {
                 editor.style.width = (info.width) + 'px';
                 editor.style.height = (info.height - 2) + 'px';
                 editor.style.minHeight = (info.height - 2) + 'px';
+
+                if (columnType == 'numeric')
+                {
+                    editor.type = 'number';
+                }
 
                 // Edit cell
                 cell.classList.add('editor');
@@ -2011,6 +2023,7 @@ if (! formula && typeof(require) === 'function') {
                     // Custom editors
                     obj.options.columns[x].editor.openEditor(cell, el, empty, e);
                 } else {
+                    var fullColumnName = jexcel.getColumnName(x) + (parseInt(y)+1);
                     // Native functions
                     if (obj.options.columns[x].type == 'hidden') {
                         // Do nothing
@@ -2021,7 +2034,8 @@ if (! formula && typeof(require) === 'function') {
                         obj.setValue(cell, value);
                         // Do not keep edition open
                         obj.edition = null;
-                    } else if (obj.options.columns[x].type == 'dropdown' || obj.options.columns[x].type == 'autocomplete') {
+                    } else if (obj.options.columns[x].type == 'dropdown' || obj.options.columns[x].type == 'autocomplete' ||
+                        (obj.options.cells[fullColumnName] && obj.options.cells[fullColumnName].type == 'dropdown')) {
                         // Get current value
                         var value = obj.options.data[y][x];
                         if (obj.options.columns[x].multiple && !Array.isArray(value)) {
@@ -2130,7 +2144,7 @@ if (! formula && typeof(require) === 'function') {
                         if (obj.options.columns[x].wordWrap != false && (obj.options.wordWrap == true || obj.options.columns[x].wordWrap == true)) {
                             var editor = createEditor('textarea');
                         } else {
-                            var editor = createEditor('input');
+                            var editor = createEditor('input', obj.options.columns[x].type);
                         }
 
                         editor.focus();
@@ -2190,10 +2204,12 @@ if (! formula && typeof(require) === 'function') {
                     // Custom editor
                     var value = obj.options.columns[x].editor.closeEditor(cell, save);
                 } else {
+                    var fullColumnName = jexcel.getColumnName(x) + (parseInt(y)+1);
                     // Native functions
                     if (obj.options.columns[x].type == 'checkbox' || obj.options.columns[x].type == 'radio' || obj.options.columns[x].type == 'hidden') {
                         // Do nothing
-                    } else if (obj.options.columns[x].type == 'dropdown' || obj.options.columns[x].type == 'autocomplete') {
+                    } else if (obj.options.columns[x].type == 'dropdown' || obj.options.columns[x].type == 'autocomplete' ||
+                        (obj.options.cells[fullColumnName] && obj.options.cells[fullColumnName].type == 'dropdown')) {
                         var value = cell.children[0].dropdown.close(true);
                     } else if (obj.options.columns[x].type == 'calendar') {
                         var value = cell.children[0].calendar.close(true);

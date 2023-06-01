@@ -3,6 +3,7 @@ const webpack = require('webpack');
 
 let dependencies = {
     jsuites: "jsuites",
+    jQuery: "jQuery"
 }
 
 module.exports = {
@@ -21,8 +22,11 @@ module.exports = {
     plugins: [
         new webpack.BannerPlugin({
             banner: `if (! jSuites && typeof(require) === 'function') {
-    var jSuites = require('jsuites');
-}`,
+                var jSuites = require('jsuites');
+            }
+            if (! jQuery && typeof(require) === 'function') {
+                var jQuery = require('jQuery');
+            }`,
             raw: true,
         }),
     ],

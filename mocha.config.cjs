@@ -3,6 +3,8 @@
 require('jsdom-global')(undefined, { url: 'https://localhost' });
 const jSuites = require("jsuites");
 global.jSuites = jSuites;
+const jQuery = require("jQuery");
+global.jQuery = jQuery;
 
 const jspreadsheet = require("./src/index.js");
 
