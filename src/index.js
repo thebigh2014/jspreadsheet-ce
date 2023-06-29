@@ -1,5 +1,5 @@
 /**
- * Jspreadsheet v4.13.4
+ * Jspreadsheet v4.13.5
  *
  * Website: https://bossanova.uk/jspreadsheet/
  * Description: Create amazing web based spreadsheets.
@@ -24,7 +24,7 @@ if (! formula && typeof(require) === 'function') {
         // Information
         var info = {
             title: 'Jspreadsheet',
-            version: '4.13.4',
+            version: '4.13.5',
             type: 'CE',
             host: 'https://bossanova.uk/jspreadsheet',
             license: 'MIT',
@@ -1223,7 +1223,12 @@ if (! formula && typeof(require) === 'function') {
 
         obj.parseValue = function(i, j, value, cell) {
             if ((''+value).substr(0,1) == '=' && obj.options.parseFormulas == true) {
-                value = obj.executeFormula(value, i, j)
+                value = obj.executeFormula(value, i, j);
+
+                // Allow one level of nested formulas (to facilitate VALUE())
+                if ((''+value).substr(0,1) == '=' && obj.options.parseFormulas == true) {
+                    value = obj.executeFormula(value, i, j);
+                }
             }
 
             // Column options
@@ -5251,13 +5256,13 @@ if (! formula && typeof(require) === 'function') {
             var formulaLoopProtection = [];
 
             // Execute formula with loop protection
-            var execute = function(expression, x, y) {
+            var execute = function(expression, x, y, bypass) {
              // Parent column identification
                 var parentId = jexcel.getColumnNameFromId([x, y]);
 
-                // Code protection
-                if (formulaLoopProtection[parentId]) {
-                    console.error('Reference loop detected');
+                // Code protection (bypass available for single level nested execution)
+                if (!bypass && formulaLoopProtection[parentId]) {
+                    console.error('Reference loop detected', x, y);
                     return '#ERROR';
                 }
 
@@ -5343,6 +5348,12 @@ if (! formula && typeof(require) === 'function') {
                                         value = formulaResults[tokens[i]];
                                     } else {
                                         value = execute(value, position[0], position[1]);
+
+                                        // Allow one level of nested formulas
+                                        if (!bypass && (''+value).substr(0,1) == '=') {
+                                            value = execute(value, position[0], position[1], true);
+                                        }
+
                                         formulaResults[tokens[i]] = value;
                                     }
                                 }
@@ -7001,7 +7012,7 @@ if (! formula && typeof(require) === 'function') {
             el.setAttribute('tabindex', 1);
             el.addEventListener('focus', function(e) {
                 if (jexcel.current && ! obj.selectedCell) {
-                    obj.updateSelectionFromCoords(0,0,0,0);
+                    obj.updateSelectionFromCoords(0,0,0,0,e);
                     obj.left();
                 }
             });
@@ -7748,7 +7759,7 @@ if (! formula && typeof(require) === 'function') {
                             }
 
                             // Update selection
-                            jexcel.current.updateSelectionFromCoords(o, 0, d, jexcel.current.options.data.length - 1);
+                            jexcel.current.updateSelectionFromCoords(o, 0, d, jexcel.current.options.data.length - 1, e);
                         }
                     } else {
                         if (e.target.parentNode.classList.contains('jexcel_nested')) {
@@ -7760,7 +7771,7 @@ if (! formula && typeof(require) === 'function') {
                                 var c1 = 0;
                                 var c2 = jexcel.current.options.columns.length - 1;
                             }
-                            jexcel.current.updateSelectionFromCoords(c1, 0, c2, jexcel.current.options.data.length - 1);
+                            jexcel.current.updateSelectionFromCoords(c1, 0, c2, jexcel.current.options.data.length - 1, e);
                         }
                     }
                 } else {
@@ -7814,7 +7825,7 @@ if (! formula && typeof(require) === 'function') {
                             }
 
                             // Update selection
-                            jexcel.current.updateSelectionFromCoords(0, o, jexcel.current.options.data[0].length - 1, d);
+                            jexcel.current.updateSelectionFromCoords(0, o, jexcel.current.options.data[0].length - 1, d, e);
                         }
                     } else {
                         // Jclose
@@ -7848,7 +7859,7 @@ if (! formula && typeof(require) === 'function') {
                                 if (! jexcel.current.edition) {
                                     // Update cell selection
                                     if (e.shiftKey) {
-                                        jexcel.current.updateSelectionFromCoords(jexcel.current.selectedCell[0], jexcel.current.selectedCell[1], columnId, rowId);
+                                        jexcel.current.updateSelectionFromCoords(jexcel.current.selectedCell[0], jexcel.current.selectedCell[1], columnId, rowId, e);
                                     } else {
                                         jexcel.current.updateSelectionFromCoords(columnId, rowId);
                                     }
@@ -8150,7 +8161,7 @@ if (! formula && typeof(require) === 'function') {
                             var o = jexcel.current.selectedHeader;
                             var d = columnId;
                             // Update selection
-                            jexcel.current.updateSelectionFromCoords(o, 0, d, jexcel.current.options.data.length - 1);
+                            jexcel.current.updateSelectionFromCoords(o, 0, d, jexcel.current.options.data.length - 1, e);
                         }
                     }
 
@@ -8161,7 +8172,7 @@ if (! formula && typeof(require) === 'function') {
                                 var o = jexcel.current.selectedRow;
                                 var d = rowId;
                                 // Update selection
-                                jexcel.current.updateSelectionFromCoords(0, o, jexcel.current.options.data[0].length - 1, d);
+                                jexcel.current.updateSelectionFromCoords(0, o, jexcel.current.options.data[0].length - 1, d, e);
                             }
                         } else {
                             // Do not select edtion is in progress
@@ -8171,7 +8182,7 @@ if (! formula && typeof(require) === 'function') {
                                         jexcel.current.updateCopySelection(columnId, rowId);
                                     } else {
                                         if (jexcel.current.selectedCell) {
-                                            jexcel.current.updateSelectionFromCoords(jexcel.current.selectedCell[0], jexcel.current.selectedCell[1], columnId, rowId);
+                                            jexcel.current.updateSelectionFromCoords(jexcel.current.selectedCell[0], jexcel.current.selectedCell[1], columnId, rowId, e);
                                         }
                                     }
                                 }
@@ -8307,7 +8318,7 @@ if (! formula && typeof(require) === 'function') {
                         if ((x < parseInt(jexcel.current.selectedCell[0])) || (x > parseInt(jexcel.current.selectedCell[2])) ||
                             (y < parseInt(jexcel.current.selectedCell[1])) || (y > parseInt(jexcel.current.selectedCell[3])))
                         {
-                            jexcel.current.updateSelectionFromCoords(x, y, x, y);
+                            jexcel.current.updateSelectionFromCoords(x, y, x, y, e);
                         }
 
                         // Table found
